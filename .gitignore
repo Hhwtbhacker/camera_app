@@ -1,0 +1,23 @@
+# Flutter / Dart
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+build/
+pubspec.lock
+
+# Android
+android/.gradle/
+android/local.properties
+android/app/.cxx/
+*.keystore
+*.jks
+*.key
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# 系统
+.DS_Store
