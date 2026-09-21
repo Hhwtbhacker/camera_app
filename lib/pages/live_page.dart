@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../config.dart';
+import '../widgets/network_switch.dart';
 
 class LivePage extends StatefulWidget {
   const LivePage({super.key});
@@ -37,6 +38,7 @@ class _LivePageState extends State<LivePage> {
       appBar: AppBar(
         title: const Text('实时画面'),
         actions: [
+          const NetworkSwitchButton(),
           Container(
             margin: const EdgeInsets.only(right: 16),
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
