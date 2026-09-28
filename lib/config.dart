@@ -4,20 +4,42 @@ import 'package:flutter/foundation.dart';
 class AppConfig {
   // ================= 网络地址配置 =================
   // 局域网地址：手机与 pi 在同一 WiFi 下时使用
-  static const String lanHost = '10.210.49.67';
+  static const String lanHost = '10.72.0.56';
 
-  // 公网地址：手机在外网访问时使用（需 pi 已做端口映射/内网穿透）。
-  // 改成你的公网 IP 或域名，例如 'example.com' 或 '123.45.67.89'
-  static const String wanHost = 'your-public-domain.com';
+  // 公网地址：手机在外网访问时使用（经 cpolar 内网穿透）。
+  // 当前是 cpolar 免费版随机域名，Pi 重启 / 隧道重连后可能变化。
+  // 变化后在 Pi 上执行下面命令拿一个「已验证可用」的地址，再同步到这里：
+  //   ~/camera/cpolar-url.sh
+  // 或（pi_systemd/cpolar-url.sh）
+  static const String wanHost = 'fbf7f07.r19.vip.cpolar.cn';
 
-  static const int port = 8080;
+  // ================= 协议与端口 =================
+  // 局域网：pi_server.py 直接提供 http 明文服务
+  static const String lanScheme = 'http';
+  static const int lanPort = 8080;
+
+  // 公网：走 cpolar 的 https 入口（默认 443，由 cpolar 侧终止 TLS 后转发到 8080）
+  static const String wanScheme = 'https';
+  static const int wanPort = 443;
   // ================================================
 
   /// 当前使用的 host（局域网/公网），切换时自动通知监听者刷新界面
   static final ValueNotifier<String> currentHost =
       ValueNotifier<String>(lanHost);
 
-  static String get baseUrl => 'http://${currentHost.value}:$port';
+  /// 当前模式使用的协议
+  static String get scheme => isLan ? lanScheme : wanScheme;
+
+  /// 当前模式使用的端口
+  static int get port => isLan ? lanPort : wanPort;
+
+  static String get baseUrl {
+    final host = currentHost.value;
+    // 80/443 是 http/https 默认端口，URL 里省略更规范
+    final defaultPort = scheme == 'https' ? 443 : 80;
+    final portPart = port == defaultPort ? '' : ':$port';
+    return '$scheme://$host$portPart';
+  }
 
   /// 实时快照地址（带时间戳防缓存）
   static String get snapshotUrl =>
