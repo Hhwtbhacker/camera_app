@@ -23,7 +23,7 @@ void main() {
     expect(find.text('视频回放'), findsWidgets);
 
     // 清空 widget 树，触发 LivePage / MjpegStreamPlayer dispose，
-    // 取消 HTTP 连接、轮询定时器和重连定时器。
+    // 取消 HTTP 连接与重连定时器。
     await tester.pumpWidget(const SizedBox());
     await tester.pump();
   });

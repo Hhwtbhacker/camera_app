@@ -4,7 +4,7 @@
 
 ## 功能
 
-- **实时画面**：MJPEG 长连接流（默认，帧率高、无闪烁），可一键切到 HTTP 快照轮询
+- **实时画面**：MJPEG 长连接流，帧率高、无闪烁，断线自动重连
 - **视频回放**：获取 pi 本地存储的视频列表，在线播放
 - **进度控制**：支持拖动进度条 seek、播放/暂停
 - **应用内更新（OTA）**：启动自动检查 + 手动检查，直接从 GitHub Releases 下载并安装新版本
@@ -59,8 +59,7 @@ flutter build apk    # 构建 APK
 
 | 接口 | 说明 |
 | ---- | ---- |
-| `GET /snapshot` | 实时快照（JPEG） |
-| `GET /stream` | MJPEG 实时流 |
+| `GET /stream` | MJPEG 实时流（App 使用） |
 | `GET /api/videos` | 视频列表 JSON |
 | `GET /videos/<name>` | 视频流式传输（支持 Range） |
 

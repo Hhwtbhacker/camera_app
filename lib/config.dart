@@ -41,10 +41,6 @@ class AppConfig {
     return '$scheme://$host$portPart';
   }
 
-  /// 实时快照地址（带时间戳防缓存）
-  static String get snapshotUrl =>
-      '$baseUrl/snapshot?t=${DateTime.now().millisecondsSinceEpoch}';
-
   /// MJPEG 流地址
   static String get streamUrl => '$baseUrl/stream';
 

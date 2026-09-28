@@ -9,8 +9,8 @@ import '../utils/mjpeg_parser.dart';
 /// MJPEG 流播放器。
 ///
 /// 通过长连接持续接收 multipart/x-mixed-replace 流，按 JPEG 帧边界（SOI 0xFFD8 /
-/// EOI 0xFFD9）拆分并逐帧显示。相比轮询快照，长连接避免了重复的 TCP/TLS 握手与
-/// HTTP 头开销，帧率更高、闪烁更少。
+/// EOI 0xFFD9）拆分并逐帧显示。长连接避免了重复的 TCP/TLS 握手与 HTTP 头开销，
+/// 帧率高、闪烁少，断线后自动重连。
 class MjpegStreamPlayer extends StatefulWidget {
   /// 流地址，例如 http://pi:8080/stream
   final String streamUrl;
