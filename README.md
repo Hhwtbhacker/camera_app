@@ -102,5 +102,7 @@ git config --local github.token <你的 PAT>
 - 仓库必须是 **Public**，否则 App 无法免认证下载 APK（token 不应打进客户端）
 - 更新检查走 `api.github.com`，未认证限流 60 次/小时/IP，超出或断网时启动检查静默失败（不打扰使用）
 - 完整性：HTTPS + Release body 中的 SHA-256 校验；安装时 Android 还会校验 APK 签名必须与已安装版本一致，因此被篡改的包无法覆盖安装
+- **下载加速**：Release 资产实际托管在 `release-assets.githubusercontent.com`，国内网络经常连不通。`downloadApk` 会先直连，失败后自动改用 `apkDownloadProxies` 里的公共镜像。SHA-256 取自 `api.github.com` 的官方响应，镜像无法篡改内容；校验不过就换下一个源
+- 所有源都失败时弹窗会提示最后一次错误，重试即可（不会残留半包，失败即清理）
 - 发布用的 APK 目前用 debug 签名（模板默认）。如需长期稳定升级，建议在 `android/app/build.gradle.kts` 配置自己的 release 签名，**更换签名会导致无法覆盖安装**
 
