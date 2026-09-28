@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../models/video_item.dart';
 import '../services/api_service.dart';
 import '../widgets/network_switch.dart';
+import '../widgets/update_check_button.dart';
 import 'player_page.dart';
 
 class VideosPage extends StatefulWidget {
@@ -32,7 +33,7 @@ class _VideosPageState extends State<VideosPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('视频回放'),
-        actions: const [NetworkSwitchButton()],
+        actions: const [UpdateCheckButton(), NetworkSwitchButton()],
       ),
       body: FutureBuilder<List<VideoItem>>(
         future: _future,

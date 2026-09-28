@@ -1,9 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:camera_mobile/config.dart';
 import 'package:camera_mobile/main.dart';
 
 void main() {
+  setUp(() {
+    // 单元测试里不做网络请求（AppConfig.autoCheckUpdate 会触发 GitHub API 检查）
+    AppConfig.autoCheckUpdate = false;
+  });
+
   testWidgets('CameraApp 构建并显示底部导航', (WidgetTester tester) async {
     await tester.pumpWidget(const CameraApp());
     await tester.pump();

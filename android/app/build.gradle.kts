@@ -44,6 +44,11 @@ kotlin {
     }
 }
 
+dependencies {
+    // FileProvider（应用内 OTA 安装 APK 需要）
+    implementation("androidx.core:core-ktx:1.13.1")
+}
+
 flutter {
     source = "../.."
 }

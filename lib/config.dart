@@ -64,4 +64,20 @@ class AppConfig {
   static void toggleNetwork() {
     currentHost.value = isLan ? wanHost : lanHost;
   }
+
+  // ================= OTA 应用内更新 =================
+  /// GitHub 仓库（owner/repo）：新版本信息与 APK 都取自它的 Releases。
+  /// 仓库必须是 Public，否则 APK 无法在有认证的情况下下载。
+  static const String githubRepo = 'Hhwtbhacker/camera_app';
+
+  /// 启动时自动检查更新（单元测试里会关掉）
+  static bool autoCheckUpdate = true;
+
+  /// 最新 Release 信息接口（GitHub API）
+  static String get latestReleaseApi =>
+      'https://api.github.com/repos/$githubRepo/releases/latest';
+
+  /// Release 页面地址（手动下载用）
+  static String get releasesPage =>
+      'https://github.com/$githubRepo/releases/latest';
 }

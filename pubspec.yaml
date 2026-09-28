@@ -12,6 +12,8 @@ dependencies:
   http: ^1.2.0
   video_player: ^2.9.0
   cupertino_icons: ^1.0.6
+  # 用于校验下载到的更新包（SHA-256）
+  crypto: ^3.0.3
 
 dev_dependencies:
   flutter_test:

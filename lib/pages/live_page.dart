@@ -6,6 +6,7 @@ import '../config.dart';
 import '../widgets/double_buffered_image.dart';
 import '../widgets/mjpeg_stream_player.dart';
 import '../widgets/network_switch.dart';
+import '../widgets/update_check_button.dart';
 
 /// 实时画面模式
 enum _LiveMode {
@@ -65,6 +66,7 @@ class _LivePageState extends State<LivePage> {
       appBar: AppBar(
         title: const Text('实时画面'),
         actions: [
+          const UpdateCheckButton(),
           const NetworkSwitchButton(),
           _ModeBadge(mode: _mode),
           Container(

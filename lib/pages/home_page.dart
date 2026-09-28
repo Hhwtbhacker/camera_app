@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../config.dart';
+import '../widgets/update_check_button.dart';
 import 'live_page.dart';
 import 'videos_page.dart';
 
@@ -13,6 +14,17 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   int _index = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    // 启动后自动检查一次更新（静默失败，仅发现新版本时弹窗）
+    if (AppConfig.autoCheckUpdate) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) checkUpdate(context, manual: false);
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
