@@ -42,7 +42,12 @@ if [[ -z "$TOKEN" ]]; then
 fi
 
 REPO_SLUG="$(git remote get-url origin |
-  sed -E 's#^.*[:/]([^/]+/[^/]+?)(\.git)?$#\1#')"
+  sed -E 's#\.git$##' |
+  sed -E 's#^.*[:/]([^/]+/[^/]+)$#\1#')"
+if [[ ! "$REPO_SLUG" =~ ^[^/]+/[^/]+$ ]]; then
+  echo "无法从 origin 解析出 owner/repo，得到: $REPO_SLUG" >&2
+  exit 1
+fi
 echo "==> 仓库: $REPO_SLUG   目标版本: $TAG"
 
 echo "==> 更新 pubspec.yaml 版本号"
@@ -52,12 +57,16 @@ grep -q "^version: ${VERSION}+${BUILD}$" pubspec.yaml || {
   exit 1
 }
 
-echo "==> 静态检查与单元测试"
-flutter analyze
-flutter test
+if [[ "${SKIP_BUILD:-0}" == "1" ]]; then
+  echo "==> 跳过静态检查/测试/构建（SKIP_BUILD=1），复用已有 APK"
+else
+  echo "==> 静态检查与单元测试"
+  flutter analyze
+  flutter test
 
-echo "==> 构建 release APK"
-flutter build apk --release
+  echo "==> 构建 release APK"
+  flutter build apk --release
+fi
 [[ -f "$APK_PATH" ]] || { echo "未找到 APK: $APK_PATH" >&2; exit 1; }
 
 SHA256="$(sha256sum "$APK_PATH" | cut -d' ' -f1)"
@@ -83,12 +92,16 @@ BODY_FILE="$(mktemp)"
   echo "sha256: ${SHA256}"
 } > "$BODY_FILE"
 
-RELEASE_JSON="$(curl -sS -X POST \
-  -H "Authorization: Bearer ${TOKEN}" \
-  -H "Accept: application/vnd.github+json" \
-  -H "X-GitHub-Api-Version: 2022-11-28" \
-  "https://api.github.com/repos/${REPO_SLUG}/releases" \
-  -d "$(python3 - "$TAG" "$BODY_FILE" <<'PY'
+# 统一带上鉴权头
+gh_api() {
+  curl -sS \
+    -H "Authorization: Bearer ${TOKEN}" \
+    -H "Accept: application/vnd.github+json" \
+    -H "X-GitHub-Api-Version: 2022-11-28" \
+    "$@"
+}
+
+PAYLOAD="$(python3 - "$TAG" "$BODY_FILE" <<'PY'
 import json, sys
 tag, body_path = sys.argv[1], sys.argv[2]
 with open(body_path, encoding='utf-8') as fh:
@@ -96,19 +109,46 @@ with open(body_path, encoding='utf-8') as fh:
 print(json.dumps({"tag_name": tag, "name": tag, "body": body,
                   "draft": False, "prerelease": False}))
 PY
-)")"
+)"
 
-UPLOAD_URL="$(printf '%s' "$RELEASE_JSON" |
-  python3 -c 'import json,sys; print(json.load(sys.stdin).get("upload_url",""))')"
-if [[ -z "$UPLOAD_URL" ]]; then
-  echo "创建 Release 失败: $RELEASE_JSON" >&2
-  rm -f "$BODY_FILE"
-  exit 1
+RELEASE_API="https://api.github.com/repos/${REPO_SLUG}/releases/tags/${TAG}"
+UPLOAD_URL="$(gh_api "$RELEASE_API" |
+  python3 -c 'import json,sys
+try:
+    print(json.load(sys.stdin).get("upload_url") or "")
+except Exception:
+    print("")')"
+
+if [[ -n "$UPLOAD_URL" ]]; then
+  echo "    （Release 已存在，更新说明后复用）"
+  gh_api -X PATCH "$RELEASE_API" -d "$PAYLOAD" >/dev/null
+else
+  RELEASE_JSON="$(gh_api -X POST "https://api.github.com/repos/${REPO_SLUG}/releases" -d "$PAYLOAD")"
+  UPLOAD_URL="$(printf '%s' "$RELEASE_JSON" |
+    python3 -c 'import json,sys; print(json.load(sys.stdin).get("upload_url") or "")')"
+  if [[ -z "$UPLOAD_URL" ]]; then
+    echo "创建 Release 失败: $RELEASE_JSON" >&2
+    rm -f "$BODY_FILE"
+    exit 1
+  fi
 fi
 UPLOAD_URL="${UPLOAD_URL%%\{*}"
 
-curl -sS -X POST \
-  -H "Authorization: Bearer ${TOKEN}" \
+# 同名资产先删掉，避免重复上传时 422（already exists）
+OLD_ASSET="$(gh_api "$RELEASE_API" |
+  python3 -c 'import json,sys
+name = sys.argv[1]
+try:
+    assets = json.load(sys.stdin).get("assets", [])
+except Exception:
+    assets = []
+print(next((str(a["id"]) for a in assets if a.get("name") == name), ""))' "$APK_NAME")"
+if [[ -n "$OLD_ASSET" ]]; then
+  echo "    （删除同名旧资产 #${OLD_ASSET}）"
+  gh_api -X DELETE "https://api.github.com/repos/${REPO_SLUG}/releases/assets/${OLD_ASSET}" >/dev/null
+fi
+
+gh_api -X POST \
   -H "Content-Type: application/vnd.android.package-archive" \
   --data-binary "@${APK_PATH}" \
   "${UPLOAD_URL}?name=${APK_NAME}" |

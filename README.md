@@ -37,6 +37,7 @@ flutter build apk    # 构建 APK
 | `wanScheme` / `wanPort` | 公网协议与端口（cpolar https 入口） | `https` / `443` |
 | `githubRepo` | OTA 更新源仓库（owner/repo） | `Hhwtbhacker/camera_app` |
 | `autoCheckUpdate` | 启动时是否自动检查更新 | `true` |
+| `apkDownloadProxies` | APK 下载源（依次尝试，空串=直连） | 直连 + 两个公共加速镜像 |
 
 应用右上角的「局域网/公网」按钮可切换使用的地址。
 

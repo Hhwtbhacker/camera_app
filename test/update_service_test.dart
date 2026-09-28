@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:camera_mobile/services/update_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -96,6 +98,54 @@ void main() {
           {"name":"a.apk","browser_download_url":"https://example.com/a.apk","size":1}]}
       ''')!;
       expect(info.notes, isNotEmpty);
+    });
+  });
+
+  group('解析真实 GitHub Release 报文', () {
+    // fixtures 里的内容取自线上真实响应：
+    // https://api.github.com/repos/Hhwtbhacker/camera_app/releases/latest
+    late String body;
+
+    setUp(() {
+      body =
+          File('test/fixtures/github_release_latest.json').readAsStringSync();
+    });
+
+    test('字段解析正确', () {
+      final info = UpdateService.parseRelease(body)!;
+
+      expect(info.tag, 'v1.0.1+2');
+      expect(info.versionText, '1.0.1+2');
+      expect(info.apkUrl, endsWith('/camera_mobile-1.0.1.apk'));
+      expect(info.apkSize, 49840924);
+      expect(info.sizeText, '47.5 MB');
+      expect(
+        info.sha256,
+        '0f49c5d50d7385c7be657f4b935068d2dc600e2cab917b96aef7bdae1999b2c5',
+      );
+      expect(info.notes.contains('sha256'), isFalse);
+      expect(info.notes, contains('OTA'));
+    });
+
+    test('对 1.0.0+1 判定为新版本，对 1.0.1+2 不再提示', () {
+      final info = UpdateService.parseRelease(body)!;
+      expect(UpdateService.isNewer(info, (version: '1.0.0', build: 1)), isTrue);
+      expect(UpdateService.isNewer(info, (version: '1.0.1', build: 2)), isFalse);
+    });
+  });
+
+  group('UpdateService.resolveDownloadUrl', () {
+    const url = 'https://github.com/o/r/releases/download/v1.0.1+2/a.apk';
+
+    test('前缀为空表示直连 GitHub', () {
+      expect(UpdateService.resolveDownloadUrl(url, ''), url);
+    });
+
+    test('加速镜像拼在原始 URL 之前', () {
+      expect(
+        UpdateService.resolveDownloadUrl(url, 'https://ghfast.top/'),
+        'https://ghfast.top/$url',
+      );
     });
   });
 }

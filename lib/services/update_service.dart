@@ -70,6 +70,9 @@ class UpdateInfo {
 class UpdateService {
   static const Duration _timeout = Duration(seconds: 20);
 
+  /// 下载过程中允许的最大无数据间隔，超时则切换到下一个下载源
+  static const Duration _stallTimeout = Duration(seconds: 30);
+
   /// GitHub API 必须带 User-Agent，否则会被拒绝
   static const Map<String, String> _apiHeaders = {
     'Accept': 'application/vnd.github+json',
@@ -106,18 +109,44 @@ class UpdateService {
     if (info == null || !isNewer(info, current)) return null;
     return info;
   }
-  /// 下载 APK 到本地并校验，返回文件（取消/失败时抛出异常，并清理残包）
+  /// 下载 APK 到本地并校验，返回文件（取消/失败时抛出异常，并清理残包）。
+  /// 按 [AppConfig.apkDownloadProxies] 依次尝试直连与各镜像，任一源校验通过即成功。
   static Future<File> downloadApk(
     UpdateInfo info,
     ProgressCallback onProgress,
   ) async {
     final dir = await _updateDir();
     final file = File('${dir.path}/${_apkFileName(info)}');
+
+    Object? lastError;
+    for (final proxy in AppConfig.apkDownloadProxies) {
+      try {
+        return await _downloadOnce(info, file, proxy, onProgress);
+      } on UpdateCancelled {
+        rethrow; // 用户主动取消，不再切换下载源
+      } catch (e) {
+        lastError = e; // 换下一个源重试（校验不过同样会换源）
+      }
+    }
+    throw lastError ?? Exception('APK 下载失败');
+  }
+
+  /// 拼接下载加速前缀，前缀为空表示直连 GitHub
+  static String resolveDownloadUrl(String url, String proxy) =>
+      proxy.isEmpty ? url : '$proxy$url';
+
+  static Future<File> _downloadOnce(
+    UpdateInfo info,
+    File file,
+    String proxy,
+    ProgressCallback onProgress,
+  ) async {
     if (file.existsSync()) file.deleteSync();
 
     final client = http.Client();
     try {
-      final request = http.Request('GET', Uri.parse(info.apkUrl));
+      final request =
+          http.Request('GET', Uri.parse(resolveDownloadUrl(info.apkUrl, proxy)));
       final resp = await client.send(request).timeout(_timeout);
       if (resp.statusCode != 200) {
         throw Exception('下载失败：HTTP ${resp.statusCode}');
@@ -127,7 +156,9 @@ class UpdateService {
       var received = 0;
       final sink = file.openWrite();
       try {
-        await for (final chunk in resp.stream) {
+        // 卡死（镜像无响应）也要能及时切到下一个源
+        final stream = resp.stream.timeout(_stallTimeout);
+        await for (final chunk in stream) {
           received += chunk.length;
           sink.add(chunk);
           if (!onProgress(received, total)) {
