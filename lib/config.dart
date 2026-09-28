@@ -77,10 +77,6 @@ class AppConfig {
   static String get latestReleaseApi =>
       'https://api.github.com/repos/$githubRepo/releases/latest';
 
-  /// Release 页面地址（手动下载用）
-  static String get releasesPage =>
-      'https://github.com/$githubRepo/releases/latest';
-
   /// APK 下载源（按顺序尝试，空串表示直连 GitHub）。
   /// GitHub Release 资产实际托管在 release-assets.githubusercontent.com，
   /// 国内网络经常连不通，因此默认再挂两个公共加速镜像兜底。
