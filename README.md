@@ -63,6 +63,8 @@ flutter build apk    # 构建 APK
 | `GET /api/videos` | 视频列表 JSON |
 | `GET /videos/<name>` | 视频流式传输（支持 Range） |
 
+> pi 端 `GET /snapshot` 接口仍然保留（`pi_server.py` 未改动），只是 App 从 1.0.2 起不再使用它——`curl http://10.72.0.56:8080/snapshot` 依然能取到当前帧，可供其他脚本使用。
+
 ## 应用内更新（OTA）
 
 App 内置了从 **GitHub Releases** 检查并安装新版本的能力（仅 Android），不需要应用商店。
